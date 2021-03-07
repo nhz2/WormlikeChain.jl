@@ -12,11 +12,11 @@ Latest Revision: Mar 6, 2021
 [![Coverage](https://codecov.io/gh/nhz2/WormlikeChain.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/nhz2/WormlikeChain.jl)
 
 
-A project to simulate a twisting discrete wormlike chain model, specifically plectoneme formation.
+A project to simulate a twisting discrete wormlike chain model. Used for studying DNA plectoneme formation with base pair mismatches.
 
-## Simulation rough design specifications and scope
+## Specifications and Scope
 
-1. dWLC gas phase (implicit solvent) where non bonded interactions are relatively uncommon.
+1. Discrete wormlike chain where non bonded interactions are relatively uncommon.
 2. Less than 10,000 particles.
 3. 1000 particle system should be able to step in <10 micro seconds of computer time.
     1. The full system step must happen "on chip".
@@ -26,7 +26,7 @@ A project to simulate a twisting discrete wormlike chain model, specifically ple
 6. Point masses, not rigid bodies or rigid constraints.
 7. Fine tunable Langevin dynamics and optional monte carlo steps.
 10. Deterministic simulation when run on the same hardware.
-11. Additive force field.
+11. The simulation will suport the following additive potential energy terms.
     1. Bonds.
     2. Finite range non bonded with exclusions.
     3. External.
@@ -38,14 +38,14 @@ A project to simulate a twisting discrete wormlike chain model, specifically ple
 4. Good interface for modifying simulation behavior/ adding new features. 
 5. Adding support for constraints/rigid bodies.
 
-## Rough Todo list
+## "to-do" list
 1. Figure out what the system step function should look like to get the required performance for some toy systems.
     1. Ideal gas
         1. Get a stateless RNG function to get gaussian random numbers.
         2. Store system positions and velocities.
-    2. SHO
+    2. Simple Harmonic Oscillator
         1. Calculate and store forces and potentials.
-    2. SHO with monte carlo step
+    2. Simple Harmonic Oscillator with monte carlo step
         1. Use energy and temp to accept or reject moves.
     3. Single chain with harmonic length bonds.
     3. Single chain with harmonic length and angle bonds.
@@ -53,12 +53,3 @@ A project to simulate a twisting discrete wormlike chain model, specifically ple
         1. Neighbor list.
 
 2. Implement simple twistable wormlike chain model for DNA without mismatch. And compare to other DNA models and experiments.
-
-
-## Data Structures
-
-????
-
-## Functions
-
-????
