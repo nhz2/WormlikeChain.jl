@@ -31,6 +31,5 @@ function randn_2x64(key::UInt64, ctr1::UInt64, ctr2::UInt64)::NTuple{2, Float64}
     a= signed(x[1]) * 2.0^-63 # uniform [-1,1]
     b= x[2] * 2.0^-64 + 2.0^-65 # uniform (0,1]
     r= sqrt(-2*log(b))
-    ret= r .* sincos(a*pi)
-    (ret[1], ret[1])
+    r .* sincos(a*pi)
 end

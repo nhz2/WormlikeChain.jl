@@ -14,8 +14,9 @@ end
     key= UInt64(123213)
     ctr1= UInt64(1)
     ctr2= UInt64(0) 
+    #generate a bunch of normal random numbers
     for i in 1:N
-        x[2i], x[2i - 1] = WormlikeChain.randn_2x64(UInt64(0), UInt64(0), ctr2+i)
+        x[2i], x[2i - 1] = WormlikeChain.randn_2x64(key, ctr1, ctr2+i)
     end
     t=ApproximateOneSampleKSTest(x[2:2:end],Normal())
     @test pvalue(t) > 0.2
