@@ -9,9 +9,9 @@ using Distributions
 end
 
 @testset "random_utils.jl" begin
-    N= 10_000_000
+    N= 1_000_000
     x= zeros(2*N)
-    key= UInt64(123213)
+    key= UInt64(123215)
     ctr1= UInt64(1)
     ctr2= UInt64(0) 
     #generate a bunch of normal random numbers
@@ -19,10 +19,10 @@ end
         x[2i], x[2i - 1] = WormlikeChain.randn_2x64(key, ctr1, ctr2+i)
     end
     t=ApproximateOneSampleKSTest(x[2:2:end],Normal())
-    @test pvalue(t) > 0.2
+    @test pvalue(t) > 0.01
     t=ApproximateOneSampleKSTest(x[1:2:end],Normal())
-    @test pvalue(t) > 0.2
+    @test pvalue(t) > 0.01
     t=ApproximateOneSampleKSTest(√0.5(x[1:2:end] .+ x[2:2:end]),Normal())
-    @test pvalue(t) > 0.2
+    @test pvalue(t) > 0.01
 
 end
