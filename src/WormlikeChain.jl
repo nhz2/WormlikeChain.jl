@@ -1,5 +1,9 @@
 module WormlikeChain
 
-# Write your package code here.
+# export stuff
+
+# include stuff
+
+include("random_utils.jl")
 
 end

@@ -3,6 +3,13 @@ uuid = "150a60af-03bd-480c-bf88-ed8ebe43ba3c"
 authors = ["Nathan Zimmerberg <nhz2@cornell.edu> and contributors"]
 version = "0.1.0"
 
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
+RNGTest = "97cc5700-e6cb-5ca1-8fb2-7f6b45264ecd"
+Random123 = "74087812-796a-5b5d-8853-05524746bad3"
+
 [compat]
 julia = "1"
 
