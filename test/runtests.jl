@@ -24,5 +24,5 @@ end
     @test pvalue(t) > 0.01
     t=ApproximateOneSampleKSTest(√0.5(x[1:2:end] .+ x[2:2:end]),Normal())
     @test pvalue(t) > 0.01
-
+    
 end

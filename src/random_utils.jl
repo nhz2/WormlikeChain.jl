@@ -13,14 +13,6 @@ function randbits_2x64(key::UInt64, ctr1::UInt64, ctr2::UInt64)::NTuple{2, UInt6
     (UInt64(x[1])|UInt64(x[2])<<32, UInt64(x[3])|UInt64(x[4])<<32)
 end
 
-"""
-Return a tuple of 2 uniform random Float64 (0,1]
-Uses the philox random CBRNG 4x32_10 
-"""
-function randu01_2x64(key::UInt64, ctr1::UInt64, ctr2::UInt64)::NTuple{2, Float64}
-    x= randbits_2x64(key, ctr1, ctr2)
-    (Float64(x[1])*2^-64 + 2^-65, Float64(x[2])*2^-64 + 2^-65)
-end
 
 """
 Return a tuple of 2 normal random Float64 
