@@ -52,11 +52,22 @@ end
 
     x= zeros(Float32,4*N)
     for i in 1:N
-        x[4i], x[4i-1], x[4i-2], x[4i-3] = WormlikeChain.randn_4x32(key, ctr1, ctr2+i)
+        x[4i-3:4i] .= WormlikeChain.randn_4x32(key, ctr1, ctr2+i)
     end
     testifnormal(x)
     for i in 1:N
-        x[4i], x[4i-1], x[4i-2], x[4i-3] = WormlikeChain.randn_4x32(key, ctr1+i, ctr2)
+        x[4i-3:4i] .= WormlikeChain.randn_4x32(key, ctr1+i, ctr2)
+    end
+    testifnormal(x)
+
+    x= zeros(Float32,6*N)
+    for i in 1:N
+        #make sure to inc ctr2 by at least 2 because each 4 normal samples uses up 1 ctr2
+        x[6i-5:6i] .= WormlikeChain.randn_32(key, ctr1, ctr2+i*2,6)
+    end
+    testifnormal(x)
+    for i in 1:N
+        x[6i-5:6i] .= WormlikeChain.randn_32(key, ctr1+i, ctr2,6)
     end
     testifnormal(x)
     
