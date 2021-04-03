@@ -60,11 +60,12 @@ end
 Return a tuple of n normal random Float32, incrementing ctr2 for each 4.
 Uses the philox random CBRNG 4x32_10 and box-muller transform
 """
-function randn_32(key::UInt64, ctr1::UInt64, ctr2::UInt64, n)
-    out= ()
-    nrngs= (n-1)÷4 + 1
-    @unroll for i in 0:(nrngs-1)
-        out= (out..., randn_4x32(key, ctr1, ctr2+i)...)
-    end
-    out[1:n]
+function randn_32(key::UInt64, ctr1::UInt64, ctr2::UInt64, n::Val{N}) where N
+    #out= ()
+    #nrngs= (n-1)÷4 + 1
+    ntuple(i -> randn_4x32(key, ctr1, ctr2 + (i-1)÷4)[(i-1)%4+1],n)
+    #@unroll for i in 0:(nrngs-1)
+    #    out= (out..., randn_4x32(key, ctr1, ctr2+i)...)
+    #end
+    #out[1:n]
 end

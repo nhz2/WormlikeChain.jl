@@ -63,11 +63,11 @@ end
     x= zeros(Float32,6*N)
     for i in 1:N
         #make sure to inc ctr2 by at least 2 because each 4 normal samples uses up 1 ctr2
-        x[6i-5:6i] .= WormlikeChain.randn_32(key, ctr1, ctr2+i*2,6)
+        x[6i-5:6i] .= WormlikeChain.randn_32(key, ctr1, ctr2+i*2,Val(6))
     end
     testifnormal(x)
     for i in 1:N
-        x[6i-5:6i] .= WormlikeChain.randn_32(key, ctr1+i, ctr2,6)
+        x[6i-5:6i] .= WormlikeChain.randn_32(key, ctr1+i, ctr2,Val(6))
     end
     testifnormal(x)
     

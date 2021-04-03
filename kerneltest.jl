@@ -1,47 +1,36 @@
 using KernelAbstractions
+using KernelAbstractions.Extras
 using CUDA
 using CUDAKernels
 using Random123
 using WormlikeChain
+using StaticArrays
 
 const N= 256
 
-@kernel function foo(A)
+function getrow(A,row)
+    ntuple(i -> A[row,i], Val(3))
+end
+
+
+@kernel function foo(A,B)
     I = @index(Global)
-    uI= I%UInt64
-    @inbounds A[I]= 0f0
-    sharedA = @localmem Float32 N
-    @inbounds sharedA[I] = 0
-    for i in 1:1000000
-        ns= WormlikeChain.randn_4x32(UInt64(0), uI, i%UInt64)
-        @inbounds sharedA[I]+= ns[1]
-    end
-    @inbounds A[I]= sharedA[I]
+    myA= getrow(A,I)
+    myB= getrow(B,I)
+    myA= myA .+ myB
+    @inbounds A[I,1] +=  myA[1]
+    
 end
 
 fookh = foo(CPU(), 8)
 fookd = foo(CUDADevice(), N)
 
-@kernel function fooabstract(A)
-    I = @index(Global)
-    uI= I%UInt64
-    @inbounds A[I]= 0f0
-    sharedA = @localmem eltype(A_d) N
-    @inbounds sharedA[I] = 0
-    for i in 1:100000
-        ns= WormlikeChain.randn_4x32(UInt64(0), uI, i%UInt64)
-        @inbounds sharedA[I]+= ns[1]
-    end
-    @inbounds A[I]= sharedA[I]
-end
 
-fooabstractkh = foo(CPU(), 8)
-fooabstractkd = foo(CUDADevice(), N)
+A_h = ones(Float32,N,3)
+A_d = CUDA.ones(Float32,N,3)
+B_h = ones(Float32,N,3)
+B_d = CUDA.ones(Float32,N,3)
 
-A_h = ones(Float32,N)
-A_d = CUDA.ones(Float32,N)
-
-A64_h = ones(Float64,N)
-A64_d = CUDA.ones(Float64,N)
-
-#@time wait(fookd(A_d, ndrange=N))
+#@time wait(fookd(A_d, B_d, ndrange=N))
+#@time wait(fookh(A_h, B_h, ndrange=N))
+show(A_d)
