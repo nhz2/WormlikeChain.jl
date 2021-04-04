@@ -9,6 +9,8 @@ using BenchmarkTools
 #BAOAB integration
 @kernel function simulate!(positions, 
                           velocities,
+                          externalforce!,
+                          @Const(beadparams),
                           invmass,
                           γ,
                           invβ,
@@ -25,14 +27,23 @@ using BenchmarkTools
     tid = @index(Local, Linear)
     groupid = @index(Group, Linear)
 
-    #sharedA = @localmem Float32 N
+    forces = @localmem Int64 (Nbeads, Ndims)
     #@inbounds sharedA[I] = 0
     #TODO set up force calc shared mem
     for step in 1:Nsteps
         #Kick
+
+        @unroll for beadloopi in 1:Nbeadsperthread
+            beadid= tid + (beadloopi-1)*Nthreads
+            externalforce!(forces,positions,beadparams,beadid)
+            #apply total forces to each bead
+            @unroll for i in 1:Ndims
+                @inbounds velocities[beadid,i] += (invmass*Δt*(2f0^-32))*forces[beadid,i]
+            end
+        end
         #Drift with O step half way
         @unroll for beadloopi in 1:Nbeadsperthread
-            mybeadid= tid + (beadloopi-1)*Nthreads + (groupid-1)*Nbeads
+            mybeadid= tid + (beadloopi-1)*Nthreads
             randns= WormlikeChain.randn_32(rngkey, stepnum+step-1, (mybeadid<<32)%UInt64,VNdims)
             @unroll for i in 1:Ndims
                 @inbounds positions[mybeadid,i] += (Δt/2) * velocities[mybeadid,i]
@@ -51,33 +62,48 @@ simkh = simulate!(CPU(), N)
 simkd = simulate!(CUDADevice(), N)
 
 pos_h = zeros(Float32,N,3)
-pos_d = CUDA.zeros(Float32,N,3)
+pos_d = cu(pos_h)
 vel_h = zeros(Float32,N,3)
-vel_d = CUDA.zeros(Float32,N,3)
+vel_d = cu(vel_h) 
+params_h = fill((k=4.0f0,),N)
+params_d = cu(params_h)
 
-# @time wait(simkh(pos_h, 
-#                 vel_h,
-#                 1f0,
-#                 1f0/10f0,
-#                 1f0,
-#                 Val(N),
-#                 1%UInt64,
-#                 124432%UInt64,
-#                 1f0,
-#                 Val(3),
-#                 Val((1,)),
-#                 Val(1000),
-#                  ndrange=N))
+function externalforce!(forces,positions,beadparams,id)
+    @unroll for i in 1:3
+        @inbounds f = -positions[id,i] * beadparams[id].k
+        @inbounds forces[id,i]= unsafe_trunc(Int64,f*(2f0^32))
+    end
+end
 
-@btime wait(simkd(pos_d, 
-                vel_d,
+
+
+@btime wait(simkh(pos_h, 
+                vel_h,
+                externalforce!,
+                params_h,
                 1f0,
                 1f0/10f0,
                 1f0,
                 Val(N),
                 1%UInt64,
                 Val(124432%UInt64),
+                0.1f0,
+                Val(3),
+                Val((1,)),
+                Val(1000),
+                 ndrange=N))
+
+@btime wait(simkd(pos_d, 
+                vel_d,
+                externalforce!,
+                params_d,
                 1f0,
+                1f0/10f0,
+                1f0,
+                Val(N),
+                1%UInt64,
+                Val(124432%UInt64),
+                0.1f0,
                 Val(3),
                 Val((1,)),
                 Val(1000),
