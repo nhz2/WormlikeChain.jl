@@ -9,7 +9,7 @@ using Suppressor
 
 """
 Roughly tests if the 1d array x is normally distributed iid. 
-    Not super rigorous
+    Not super rigorous, but hopefully catches some issues
 """
 function testifnormal(x)
     sets= [x[:],
@@ -32,6 +32,25 @@ end
 
 @testset "WormlikeChain.jl" begin
     # Write your tests here.
+end
+
+@testset "bonded_forces_utils.jl" begin
+    @test 1 == WormlikeChain.next_beadid(1,(1,2))
+    @test 2 == WormlikeChain.next_beadid(1,(1,10))
+    @test 4 == WormlikeChain.next_beadid(3,(1,10))
+    @test 1 == WormlikeChain.next_beadid(9,(1,10))
+    @test 1 == WormlikeChain.next_beadid(9,(1,10,15))
+    @test 11 == WormlikeChain.next_beadid(10,(1,10,15))
+    @test 10 == WormlikeChain.next_beadid(14,(1,10,15))
+
+    @test 1 == WormlikeChain.prev_beadid(1,(1,2))
+    @test 9 == WormlikeChain.prev_beadid(1,(1,10))
+    @test 2 == WormlikeChain.prev_beadid(3,(1,10))
+    @test 8 == WormlikeChain.prev_beadid(9,(1,10))
+    @test 9 == WormlikeChain.prev_beadid(1,(1,10,15))
+    @test 14 == WormlikeChain.prev_beadid(10,(1,10,15))
+    @test 13 == WormlikeChain.prev_beadid(14,(1,10,15))
+
 end
 
 @testset "random_utils.jl" begin

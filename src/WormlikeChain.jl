@@ -6,4 +6,6 @@ module WormlikeChain
 
 include("random_utils.jl")
 
+include("bonded_forces_utils.jl")
+
 end
