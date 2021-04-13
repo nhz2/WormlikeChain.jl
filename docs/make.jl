@@ -20,4 +20,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/nhz2/WormlikeChain.jl",
+    devbranch = "main"
 )
