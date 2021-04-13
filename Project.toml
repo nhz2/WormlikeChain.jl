@@ -11,11 +11,11 @@ Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FastClosures = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
 HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
-RNGTest = "97cc5700-e6cb-5ca1-8fb2-7f6b45264ecd"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random123 = "74087812-796a-5b5d-8853-05524746bad3"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
-StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 julia = "1.4"

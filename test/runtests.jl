@@ -1,9 +1,9 @@
 using WormlikeChain
 using Test
-using RNGTest
 using HypothesisTests
 using Distributions
 using Suppressor
+using LinearAlgebra
 
 
 
@@ -30,9 +30,7 @@ function testifnormal(x)
     end
 end
 
-@testset "WormlikeChain.jl" begin
-    # Write your tests here.
-end
+include("test_interface.jl")
 
 @testset "bonded_forces_utils.jl" begin
     @test 1 == WormlikeChain.next_beadid(1,(1,2))
