@@ -89,6 +89,7 @@ end
 
 
 @testset "ChainSystem" begin
+    #putting it all together
     perbead_param_keys= (:k,:kθ)
     global_param_keys= (:d₀,)
     function chain_pe(p,b,n,perbead_params,global_params)
@@ -113,5 +114,18 @@ end
     #create chain2 translated [1 0 0] from chain1
     chain2= Chain(beaddef1,params, globalparams, pos .+ [1 0 0])
     system= append(system,chain2)
+    #specific forces
+    params= (k=10.0,)
+    pe(x,time,params)= 1//2 * params.k * sum((x[1]).^2)
+    interactions = [((1,1),)
+                    ((1,2),)]
+    fdef= SpecificForce(pe, params, interactions, Val(3))
+    system= append(system,fdef)
 
+    params2= (k₁=10.0, k₂=2.0)
+    pe2(x,time,params)= 1//2 * sum((params.k₁, params.k₂, params.k₂*time) .* ((x[1] .- x[2]).^2))
+    interactions2 = [((1,1),(2,1))
+                    ((1,2),(1,1))]
+    fdef2= SpecificForce(pe2, params2, interactions2, Val(3))
+    system= append(system,fdef2)
 end

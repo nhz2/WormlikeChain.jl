@@ -62,7 +62,7 @@ struct Chain
             all(isfinite.([pf;bf;nf;e])) || @warn "some forces or energies are not finite on Bead number $(beadi)"
             all(abs.([pf;bf;nf;e]) .< 2.0^30) || @warn "some forces or energies are over 2^30 on Bead number $(beadi)"
         end
-        new(beaddef::BeadDefinition, perbead_params, global_params, init_pos, init_vel)
+        new(beaddef::BeadDefinition, copy(perbead_params), global_params, copy(init_pos), copy(init_vel))
     end
 end
 
@@ -109,7 +109,7 @@ function SpecificForce(pe, params,
         f= gfun(vcat(rs...), time, pars)
         ntuple(j->SVector(ntuple(i->f[i+Ndims*(j-1)],Ndims)),Nways)
     end
-    SpecificForce(pe,force,params,interactions,VNdims,exprpe)
+    SpecificForce(pe,force,params,copy(interactions),VNdims,exprpe)
 end
 
 
@@ -137,7 +137,7 @@ end
 Create an empty System
 """
 function ChainSystem(starttime, beaddef::BeadDefinition, global_params)
-    ChainSystem(starttime,[],beaddef,[],global_params,nothing,nothing,(1,))
+    ChainSystem(starttime,(),beaddef,nothing,global_params,nothing,nothing,(1,))
 end
 
 
@@ -173,7 +173,7 @@ return a new ChainSystem with added chain
 function append(s::ChainSystem, f::SpecificForce)
     #error checking
     s.beaddef.VNdims == f.VNdims || error("system and force must have matching beaddef")
-    specificforces= [s.specificforces; f]
+    specificforces= (s.specificforces..., f)
     news= ChainSystem(s.starttime,specificforces,s.beaddef,s.perbead_params,s.global_params,s.init_pos, s.init_vel,s.chainbounds)
     #check energy and forces for issues
     force_pe(news,news.init_pos,news.starttime)
