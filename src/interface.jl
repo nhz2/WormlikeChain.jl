@@ -101,7 +101,7 @@ function SpecificForce(pe, params,
     exprpe= pe(ntuple(i->r[i,:],Nways), time ,symparams) + 0time#This 0time is to force exprpe into a Num type
     rssymb= vcat(ntuple(i->r[i,:],Nways)...)
     g= Symbolics.gradient(-exprpe, rssymb; simplify=true)
-    @info g
+    @debug g
     gexpr= build_function(g, rssymb, time, pars, expression=Val{true})
     gfun= eval(gexpr[1])
     function force(rs, time, pars)
@@ -112,25 +112,25 @@ function SpecificForce(pe, params,
 end
 
 
-# """
-# A collection of Chains ans SpecificForces
-# """
-# struct ChainSystem
-#     starttime
-#     specificinteractions
-#     beaddef::BeadDefinition
-#     perbead_params
-#     global_params
-#     init_pos
-#     init_vel
-#     """
-#     chainbounds is a tuple of at least 2 Ints, 
-#         chainbounds[1] is 1
-#         chainbounds[end] is the total number of beads + 1
-#         the other element in chainbounds are the bead ids of the start of a new chain
-#     """
-#     chainbounds::Tuple{T,T,Vararg{T}} where T <: Integer
-# end
+"""
+A collection of Chains and SpecificForces
+"""
+struct ChainSystem
+    starttime
+    specificforces
+    beaddef::BeadDefinition
+    perbead_params
+    global_params
+    init_pos
+    init_vel
+    """
+    chainbounds is a tuple of at least 2 Ints, 
+        chainbounds[1] is 1
+        chainbounds[end] is the total number of beads + 1
+        the other element in chainbounds are the bead ids of the start of a new chain
+    """
+    chainbounds::Tuple{T,T,Vararg{T}} where T <: Integer
+end
 
 # function ChainSystem(chains, boundary_pe, added_global_params)
 #     #symbolically diff potential energy to get force

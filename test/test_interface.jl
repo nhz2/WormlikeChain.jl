@@ -83,5 +83,6 @@ end
     @test f2 == .-f1
 
     #now test that SpecificForce will catch basic pe errors
-    #pe_bad(x,time,params)= 1//2 * params.k * (x[1][4])^2
+    pe_bad(x,time,params)= 1//2 * params.k * (x[1][4])^2
+    @test_throws BoundsError SpecificForce(pe_bad, params, interactions, Val(3))
 end
