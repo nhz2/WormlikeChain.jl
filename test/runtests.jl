@@ -32,6 +32,8 @@ end
 
 include("test_interface.jl")
 
+include("test_cpukernels.jl")
+
 @testset "bonded_forces_utils.jl" begin
     @test 1 == WormlikeChain.next_beadid(1,(1,2))
     @test 2 == WormlikeChain.next_beadid(1,(1,10))
