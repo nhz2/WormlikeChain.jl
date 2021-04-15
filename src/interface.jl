@@ -60,6 +60,7 @@ struct Chain
             pf, bf, nf = beaddef.chain_force(p,b,n,perbead_params[beadi], global_params)
             e= beaddef.chain_pe(p,b,n,perbead_params[beadi], global_params)
             all(isfinite.([pf;bf;nf;e])) || @warn "some forces or energies are not finite on Bead number $(beadi)"
+            all(abs.([pf;bf;nf;e]) .< 2.0^30) || @warn "some forces or energies are over 2^30 on Bead number $(beadi)"
         end
         new(beaddef::BeadDefinition, perbead_params, global_params, init_pos, init_vel)
     end
@@ -124,33 +125,98 @@ struct ChainSystem
     init_pos
     init_vel
     """
-    chainbounds is a tuple of at least 2 Ints, 
+    chainbounds is a tuple of at least 1 Int, 
         chainbounds[1] is 1
         chainbounds[end] is the total number of beads + 1
         the other element in chainbounds are the bead ids of the start of a new chain
     """
-    chainbounds::Tuple{T,T,Vararg{T}} where T <: Integer
+    chainbounds::Tuple{T,Vararg{T}} where T <: Integer
 end
 
-# function ChainSystem(chains, boundary_pe, added_global_params)
-#     #symbolically diff potential energy to get force
-#     Ndims= size(init_pos)[2]
-#     @variables b[1:Ndims]
-#     @variables bpars[1:Nbparams]
-#     @variables gpars[1:Ngparams]
-#     bsymparams= (; zip(perbead_param_keys,(bpars...,))...)
-#     gsymparams= (; zip(global_param_keys,(gpars...,))...)
-#     exprpe= chain_pe(p,b,n,bsymparams,gsymparams)
-#     g= Symbolics.gradient(-exprpe, [p;b;n]; simplify=true)
-#     @debug g
-#     gexpr= build_function(g, [p;b;n], bpars, gpars ,expression=Val{true})
-#     gfun= eval(gexpr[1])
-#     function chain_force(p,b,n, bpars, gpars)
-#         f= gfun([p;b;n], bpars, gpars)
-#         pf = ntuple((i -> @inbounds(f[i])), VNdims)
-#         bf = ntuple((i -> @inbounds(f[i+Ndims])), VNdims)
-#         nf = ntuple((i -> @inbounds(f[i+2Ndims])), VNdims)
-#         (SVector(pf),SVector(bf),SVector(nf))
-#     end
-#     BeadDefinition(chain_pe, chain_force, perbead_param_keys, global_param_keys, VNdims, exprpe)
-# end
+"""
+Create an empty System
+"""
+function ChainSystem(starttime, beaddef::BeadDefinition, global_params)
+    ChainSystem(starttime,[],beaddef,[],global_params,nothing,nothing,(1,))
+end
+
+
+
+
+"""
+return a new ChainSystem with added chain 
+"""
+function append(s::ChainSystem, c::Chain)
+    #error checking
+    s.beaddef == c.beaddef || error("system and chain must have matching beaddef")
+    s.global_params == c.global_params || error("system and chain must have matching global_params")
+    Nbeads= size(c.init_pos)[1]
+    if isnothing(s.init_pos)
+        init_pos= c.init_pos
+        init_vel= c.init_vel
+        perbead_params= c.perbead_params
+    else
+        init_pos= [s.init_pos; c.init_pos]
+        init_vel= [s.init_vel; c.init_vel]
+        perbead_params= [s.perbead_params; c.perbead_params]
+    end
+    chainbounds= (s.chainbounds...,s.chainbounds[end]+Nbeads)
+    news= ChainSystem(s.starttime,s.specificforces,s.beaddef,perbead_params,s.global_params,init_pos, init_vel,chainbounds)
+    #check energy and forces for issues
+    force_pe(news,news.init_pos,news.starttime)
+    news
+end
+
+"""
+return a new ChainSystem with added chain 
+"""
+function append(s::ChainSystem, f::SpecificForce)
+    #error checking
+    s.beaddef.VNdims == f.VNdims || error("system and force must have matching beaddef")
+    specificforces= [s.specificforces; f]
+    news= ChainSystem(s.starttime,specificforces,s.beaddef,s.perbead_params,s.global_params,s.init_pos, s.init_vel,s.chainbounds)
+    #check energy and forces for issues
+    force_pe(news,news.init_pos,news.starttime)
+    news
+end
+
+
+"""
+Return force, pe of the beads
+"""
+function force_pe(s::ChainSystem,pos,time)
+    @assert size(s.init_pos) == size(pos)
+    f= zero(pos)
+    pe= 0.0
+    for sf in s.specificforces
+        for interaction in sf.interactions
+            rs= map(ids->pos[tobeadid(ids...,s.chainbounds),:], interaction)
+            fs= sf.force(rs,time,sf.params)
+            spe= sf.pe(rs,time,sf.params)
+            all(isfinite.(vcat(fs..., spe))) || @warn "some forces or energies are not finite on specific force $(sf), interaction $(interaction)"
+            all(abs.(vcat(fs..., spe)) .< 2.0^30) || @warn "some forces or energies are over 2^30 on specific force $(sf), interaction $(interaction))"
+            for i in 1:length(interaction)
+                f[tobeadid(interaction[i]...,s.chainbounds),:] .+= fs[i]
+            end
+            pe += spe
+        end
+    end
+    Nbeads= size(pos)[1]
+    #chain forces
+    for beadid in 1:Nbeads
+        previd = prev_beadid(beadid,s.chainbounds)
+        nextid = next_beadid(beadid,s.chainbounds) 
+        p= pos[previd,:]
+        b= pos[beadid,:]
+        n= pos[nextid,:]
+        pf, bf, nf = s.beaddef.chain_force(p,b,n,s.perbead_params[beadid], s.global_params)
+        e= s.beaddef.chain_pe(p,b,n,s.perbead_params[beadid], s.global_params)
+        all(isfinite.([pf;bf;nf;e])) || @warn "chain forces or energies are not finite on Bead number $(beadid)"
+        all(abs.([pf;bf;nf;e]) .< 2.0^30) || @warn "chain forces or energies are over 2^30 on Bead number $(beadid)"
+        pe +=e
+        f[previd,:] .+= pf
+        f[beadid,:] .+= bf
+        f[nextid,:] .+= nf
+    end
+    f, pe
+end

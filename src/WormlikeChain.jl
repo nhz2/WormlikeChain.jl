@@ -5,6 +5,9 @@ include("random_utils.jl")
 export BeadDefinition
 export Chain
 export SpecificForce
+export ChainSystem
+export append
+export force_pe
 include("interface.jl")
 
 include("bonded_forces_utils.jl")

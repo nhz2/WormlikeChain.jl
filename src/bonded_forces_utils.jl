@@ -37,3 +37,15 @@ function next_beadid(beadid, chainbounds)
     end
     next
 end
+
+"""
+Return the global bead id of the chain id and sub chain bead id
+
+chainbounds is a tuple of at least 2 Ints, 
+    chainbounds[1] is 1
+    chainbounds[end] is the total number of beads + 1
+    the other element in chainbounds are the bead ids of the start of a new chain
+"""
+function tobeadid(chain_id, subchain_bead_id, chainbounds)
+    chainbounds[chain_id] - 1 + subchain_bead_id
+end
