@@ -71,3 +71,86 @@ zero velocities by default
 function Chain(beaddef::BeadDefinition, perbead_params, global_params, init_pos)
     Chain(beaddef::BeadDefinition, perbead_params, global_params, init_pos, zero(init_pos))
 end
+
+"""
+A force that acts on a specific list of beads
+"""
+struct SpecificForce{Ndims,Nways}
+    pe
+    force
+    params
+    interactions::AbstractArray{NTuple{Nways,NTuple{2,T}},1} where T<:Integer
+    VNdims::Val{Ndims}
+    pe_expression
+end
+
+"""
+Create a specific force
+pe 
+
+"""
+function SpecificForce(pe, params, 
+    interactions::AbstractArray{NTuple{Nways,NTuple{2,T}},1} where T<:Integer,
+    VNdims::Val{Ndims}) where {Ndims, Nways}
+    #symbolically diff potential energy to get force
+    a = Num(SymbolicUtils.Sym{Real}(:a))
+    @variables r[1:Nways,1:Ndims]
+    @variables pars[1:length(params)]
+    @variables time
+    symparams= (; zip(keys(params),(pars...,))...)
+    exprpe= pe(ntuple(i->r[i,:],Nways), time ,symparams) + 0time#This 0time is to force exprpe into a Num type
+    rssymb= vcat(ntuple(i->r[i,:],Nways)...)
+    g= Symbolics.gradient(-exprpe, rssymb; simplify=true)
+    @info g
+    gexpr= build_function(g, rssymb, time, pars, expression=Val{true})
+    gfun= eval(gexpr[1])
+    function force(rs, time, pars)
+        f= gfun(vcat(rs...), time, pars)
+        ntuple(j->SVector(ntuple(i->f[i+Ndims*(j-1)],Ndims)),Nways)
+    end
+    SpecificForce(pe,force,params,interactions,VNdims,exprpe)
+end
+
+
+# """
+# A collection of Chains ans SpecificForces
+# """
+# struct ChainSystem
+#     starttime
+#     specificinteractions
+#     beaddef::BeadDefinition
+#     perbead_params
+#     global_params
+#     init_pos
+#     init_vel
+#     """
+#     chainbounds is a tuple of at least 2 Ints, 
+#         chainbounds[1] is 1
+#         chainbounds[end] is the total number of beads + 1
+#         the other element in chainbounds are the bead ids of the start of a new chain
+#     """
+#     chainbounds::Tuple{T,T,Vararg{T}} where T <: Integer
+# end
+
+# function ChainSystem(chains, boundary_pe, added_global_params)
+#     #symbolically diff potential energy to get force
+#     Ndims= size(init_pos)[2]
+#     @variables b[1:Ndims]
+#     @variables bpars[1:Nbparams]
+#     @variables gpars[1:Ngparams]
+#     bsymparams= (; zip(perbead_param_keys,(bpars...,))...)
+#     gsymparams= (; zip(global_param_keys,(gpars...,))...)
+#     exprpe= chain_pe(p,b,n,bsymparams,gsymparams)
+#     g= Symbolics.gradient(-exprpe, [p;b;n]; simplify=true)
+#     @debug g
+#     gexpr= build_function(g, [p;b;n], bpars, gpars ,expression=Val{true})
+#     gfun= eval(gexpr[1])
+#     function chain_force(p,b,n, bpars, gpars)
+#         f= gfun([p;b;n], bpars, gpars)
+#         pf = ntuple((i -> @inbounds(f[i])), VNdims)
+#         bf = ntuple((i -> @inbounds(f[i+Ndims])), VNdims)
+#         nf = ntuple((i -> @inbounds(f[i+2Ndims])), VNdims)
+#         (SVector(pf),SVector(bf),SVector(nf))
+#     end
+#     BeadDefinition(chain_pe, chain_force, perbead_param_keys, global_param_keys, VNdims, exprpe)
+# end
