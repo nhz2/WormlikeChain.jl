@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.2
+# v0.14.5
 
 using Markdown
 using InteractiveUtils
@@ -25,18 +25,13 @@ begin
 	Pkg.add("PlutoUI")
 	Pkg.add("StaticArrays")
 	Pkg.add("BenchmarkTools")
+	using Revise
 	using Plots
 	using PlutoUI
+	using WormlikeChain
+	using StaticArrays
+	using BenchmarkTools
 end
-
-# ╔═╡ d6c5e8aa-2b42-4ce1-9b42-e6c54bdcbf91
-using WormlikeChain
-
-# ╔═╡ 5a21fa3e-7053-4b85-860d-d011cb1f88cd
-using StaticArrays
-
-# ╔═╡ 18d60643-0f9e-430b-bff1-86aa191f8eae
-using BenchmarkTools
 
 # ╔═╡ f4577ff0-f627-4f54-87d3-27f4518e51db
 md"""
@@ -91,7 +86,7 @@ begin
 	vel= zero(pos)# .+ [0.0 -0.1]
 	scatter(pos[:,1],pos[:,2])
 	#beadparams= fill((k=0.0, kθ=0.0),Nbeads)
-	beadparams= fill((k=3.5, kθ=4.4),Nbeads)
+	beadparams= fill((k=10.0, kθ=4.4),Nbeads)
 	# beadparams[Nbeads]= (k=0.0, kθ= 0.0)# turn off interation to split ends
 	# beadparams[1]= (k=3.5, kθ= 0.0)
 end
@@ -150,35 +145,56 @@ md"""
 Kernel get recompiled and speciallized for the new types created
 """
 
-# ╔═╡ a88ade2a-66a6-443d-91a3-d48526905c86
-totalframes= 10000
+# ╔═╡ bc1f2f08-707d-4899-8366-21ddd07dfda3
 
-# ╔═╡ c4a9e6bb-befe-4403-9e97-46a8b43fe970
+
+# ╔═╡ 7379a001-450a-420f-a012-e2a7b92d1e1c
 begin
-	Δt= 0.01
-	γ= 0.0
-	invβ= 0.01
+	invmass= 1.0
+    γ= 0.0
+    invβ= 1.0
+    VNbeads= Val(size(system.init_pos)[1])
+    VNdims= Val(size(system.init_pos)[2])
+    step0= UInt64(0)
+    time0= 0.0
+    Vrngkey= Val(UInt64(123))
+    Δt= 0.01
+    VChainbounds= Val(system.chainbounds)
+    VNsteps= Val(1000)
+end
+
+# ╔═╡ 5b49a595-f83e-4084-9277-8a72e6d1e9be
+VNbeads
+
+# ╔═╡ bb8e8fcb-ebc2-495b-a938-31a303a30278
+VNdims
+
+# ╔═╡ a88ade2a-66a6-443d-91a3-d48526905c86
+totalframes= 100
+
+# ╔═╡ eb2dcad9-3ec6-4d43-9588-6f0c1d2239ed
+begin
 	trajectory= zeros(Nbeads,Ndims,totalframes)
 	pes= zeros(totalframes)
-	kes= zeros(totalframes)
+ 	kes= zeros(totalframes)
 	simpos= copy(system.init_pos)
-	simvel= copy(system.init_vel)
+    simvel= copy(system.init_vel)
 	simvel[1,:] = [0.1 0.1]
-	simvel .+= [0 1]
+ 	simvel .+= [0 1]
+
 	for step in 1:totalframes
 		trajectory[:,:,step] .= simpos
 		f, pe= force_pe(system,simpos,0.0)
+		kes[step] = 1//2*sum((simvel .+ (Δt/2).*f) .^ 2)
 		pes[step] = pe
-		kes[step] = 1//2*sum(simvel .^ 2)
-		simvel .+= Δt.*f
-		simpos .+= Δt.*simvel
-		simvel .*= exp(-Δt*γ)
-		simvel .+= (√(1-exp(-2γ*Δt))*√(invβ)) .* randn(Nbeads,Ndims)
-		simpos .+= Δt.*simvel
-		f, pe= force_pe(system,simpos,0.0)
-		simvel .+= Δt.*f
-	end
-	nothing
+    	refcpukernel!(simpos, simvel,
+                system.sp_forces, system.sp_interactions, system.sp_params,
+                system.beaddef.chain_force, system.perbead_params, 
+			    system.global_params,
+                invmass, γ, invβ, VNbeads, step0, time0,
+                Vrngkey, Δt, VNdims, VChainbounds, VNsteps)
+ 	end
+
 end
 
 # ╔═╡ 587def7f-a48b-4140-8571-bcf9151e0409
@@ -223,7 +239,11 @@ plotly()
 # ╠═b2f82994-caed-42dd-8fb8-3ad965446e35
 # ╠═4cd004e3-beeb-47a9-94a2-a4738c637ecc
 # ╟─eb54332d-3f8e-4884-92b1-949267412239
-# ╠═c4a9e6bb-befe-4403-9e97-46a8b43fe970
+# ╠═bc1f2f08-707d-4899-8366-21ddd07dfda3
+# ╠═7379a001-450a-420f-a012-e2a7b92d1e1c
+# ╠═5b49a595-f83e-4084-9277-8a72e6d1e9be
+# ╠═bb8e8fcb-ebc2-495b-a938-31a303a30278
+# ╠═eb2dcad9-3ec6-4d43-9588-6f0c1d2239ed
 # ╠═a88ade2a-66a6-443d-91a3-d48526905c86
 # ╠═036a7fd3-11a0-4aae-a5d5-b819c1bf114b
 # ╠═39fe110d-20b0-4362-b4d7-1f51a9fbf128
@@ -232,6 +252,3 @@ plotly()
 # ╠═9285d6f0-9e71-11eb-0411-1928431042b7
 # ╠═f455bcc9-02bb-4d20-961d-4da33624a575
 # ╠═c3c2b1b4-4e73-4b68-8f2d-39fe1db6f550
-# ╠═d6c5e8aa-2b42-4ce1-9b42-e6c54bdcbf91
-# ╠═5a21fa3e-7053-4b85-860d-d011cb1f88cd
-# ╠═18d60643-0f9e-430b-bff1-86aa191f8eae

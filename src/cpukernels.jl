@@ -47,6 +47,8 @@ function refcpukernel!(pos,
             force[previd,:] .+= pf
             force[beadid,:] .+= bf
             force[nextid,:] .+= nf
+        end
+        for beadid in 1:Nbeads
             vel[beadid,:] .+= (invmass*Δt) .* force[beadid,:]
             pos[beadid,:] .+= (Δt/2) .* vel[beadid,:]
             vel[beadid,:] .*= exp(-Δt*γ)

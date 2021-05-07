@@ -118,7 +118,10 @@ A collection of Chains and SpecificForces
 """
 struct ChainSystem
     starttime
-    specificforces
+    sp_pes
+    sp_forces
+    sp_interactions
+    sp_params
     beaddef::BeadDefinition
     perbead_params
     global_params
@@ -137,7 +140,10 @@ end
 Create an empty System
 """
 function ChainSystem(starttime, beaddef::BeadDefinition, global_params)
-    ChainSystem(starttime,(),beaddef,nothing,global_params,nothing,nothing,(1,))
+    ChainSystem(starttime,(),(),(),(),
+                    beaddef,
+                    nothing,global_params,
+                    nothing,nothing,(1,))
 end
 
 
@@ -161,20 +167,30 @@ function append(s::ChainSystem, c::Chain)
         perbead_params= [s.perbead_params; c.perbead_params]
     end
     chainbounds= (s.chainbounds...,s.chainbounds[end]+Nbeads)
-    news= ChainSystem(s.starttime,s.specificforces,s.beaddef,perbead_params,s.global_params,init_pos, init_vel,chainbounds)
+    news= ChainSystem(s.starttime,
+                    s.sp_pes,s.sp_forces,s.sp_interactions,s.sp_params,
+                    s.beaddef,
+                    perbead_params,s.global_params,init_pos, init_vel,chainbounds)
     #check energy and forces for issues
     force_pe(news,news.init_pos,news.starttime)
     news
 end
 
 """
-return a new ChainSystem with added chain 
+Return a new ChainSystem with added force 
 """
 function append(s::ChainSystem, f::SpecificForce)
     #error checking
     s.beaddef.VNdims == f.VNdims || error("system and force must have matching beaddef")
-    specificforces= (s.specificforces..., f)
-    news= ChainSystem(s.starttime,specificforces,s.beaddef,s.perbead_params,s.global_params,s.init_pos, s.init_vel,s.chainbounds)
+    pes= (s.sp_pes..., f.pe)
+    forces= (s.sp_forces..., f.force)
+    #convert interactions to full bead id, instead of tuple.
+    beadids= map(i->map(ids->tobeadid(ids...,s.chainbounds), i), f.interactions)
+    interactions= (s.sp_interactions..., beadids)
+    params= (s.sp_params..., f.params)
+    news= ChainSystem(s.starttime,pes,forces,interactions,params,
+                s.beaddef,
+                s.perbead_params,s.global_params,s.init_pos, s.init_vel,s.chainbounds)
     #check energy and forces for issues
     force_pe(news,news.init_pos,news.starttime)
     news
@@ -188,15 +204,15 @@ function force_pe(s::ChainSystem,pos,time)
     @assert size(s.init_pos) == size(pos)
     f= zero(pos)
     pe= 0.0
-    for sf in s.specificforces
-        for interaction in sf.interactions
-            rs= map(ids->pos[tobeadid(ids...,s.chainbounds),:], interaction)
-            fs= sf.force(rs,time,sf.params)
-            spe= sf.pe(rs,time,sf.params)
+    for fi in 1:length(s.sp_forces)
+        for interaction in s.sp_interactions[fi]
+            rs= map(id->pos[id,:], interaction)
+            fs= s.sp_forces[fi](rs,time,s.sp_params[fi])
+            spe= s.sp_pes[fi](rs,time,s.sp_params[fi])
             all(isfinite.(vcat(fs..., spe))) || @warn "some forces or energies are not finite on specific force $(sf), interaction $(interaction)"
             all(abs.(vcat(fs..., spe)) .< 2.0^30) || @warn "some forces or energies are over 2^30 on specific force $(sf), interaction $(interaction))"
             for i in 1:length(interaction)
-                f[tobeadid(interaction[i]...,s.chainbounds),:] .+= fs[i]
+                f[interaction[i],:] .+= fs[i]
             end
             pe += spe
         end
@@ -220,3 +236,11 @@ function force_pe(s::ChainSystem,pos,time)
     end
     f, pe
 end
+
+
+# """
+# Return system stepper
+# """
+# function makeintegrator(kernel,s::ChainSystem)
+    
+# end

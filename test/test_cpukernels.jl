@@ -53,15 +53,12 @@
     Δt= 0.01
     VChainbounds= Val(system.chainbounds)
     VNsteps= Val(2)
-    specificinteractions= map(sf -> sf.interactions, system.specificforces)
-    specificinteractions= map(arr -> map(beads2ids -> map(beads2id-> WormlikeChain.tobeadid(beads2id...,system.chainbounds),beads2ids), arr),specificinteractions)
-
 
     refcpukernel!(simpos, 
                 simvel,
-                map(sf->sf.force, system.specificforces),
-                specificinteractions,
-                map(sf->sf.params, system.specificforces),
+                system.sp_forces,
+                system.sp_interactions,
+                system.sp_params,
                 system.beaddef.chain_force,
                 copy(system.perbead_params),
                 system.global_params,
