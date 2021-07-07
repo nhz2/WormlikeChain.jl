@@ -18,6 +18,7 @@ Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
+CUDAKernels = "0.3"
 julia = "1.6"
 
 [extras]
